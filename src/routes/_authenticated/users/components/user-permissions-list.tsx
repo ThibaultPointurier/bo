@@ -31,6 +31,8 @@ export function UserPermissionsList({ userId, userRoles }: UserPermissionsListPr
     queryFn: () => getRoles(),
   })
 
+  const roles = rolesQuery.data?.data ?? []
+
   const allPermissionsQuery = useQuery({
     queryKey: ['permissions'],
     queryFn: getPermissions,
@@ -144,11 +146,11 @@ export function UserPermissionsList({ userId, userRoles }: UserPermissionsListPr
                     const hasGrant = individualPermissions.includes(perm.value)
                     const hasDeny = denyPermissions.includes(perm.value)
                     const isToggling = togglingPerm === perm.value
-                    const coveredByRole = rolesQuery.data?.some(
+                    const coveredByRole = roles.some(
                       (role: Role) =>
                         userRoles.includes(role.name) &&
                         role.permissions.includes(perm.value)
-                    ) ?? false
+                    )
                     const isActive = hasDeny ? false : hasGrant || coveredByRole
 
                     return (

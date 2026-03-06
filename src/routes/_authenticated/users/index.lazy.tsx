@@ -41,7 +41,7 @@ export default function UsersPage() {
   })
 
   const meta = usersQuery.data?.meta
-  const users = usersQuery.data?.users ?? []
+  const users = usersQuery.data?.data ?? []
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -198,10 +198,10 @@ export default function UsersPage() {
                 </TableBody>
               </Table>
 
-              {meta && meta.totalPages > 1 && (
+              {meta && meta.lastPage > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <p className="text-sm text-muted-foreground">
-                    Page {meta.page} sur {meta.totalPages}
+                    Page {meta.currentPage} sur {meta.lastPage}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -217,7 +217,7 @@ export default function UsersPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(page + 1)}
-                      disabled={page >= meta.totalPages}
+                      disabled={page >= meta.lastPage}
                     >
                       Suivant
                       <ChevronRight className="size-4" />

@@ -51,14 +51,26 @@ interface AdminUser {
   updatedAt: string | null
 }
 
+interface PaginationMeta {
+  total: number
+  perPage: number
+  currentPage: number
+  lastPage: number
+  firstPage: number
+  firstPageUrl: string
+  lastPageUrl: string
+  nextPageUrl: string | null
+  previousPageUrl: string | null
+}
+
 interface PaginatedUsers {
-  users: AdminUser[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
+  data: AdminUser[]
+  meta: PaginationMeta
+}
+
+interface PaginatedRoles {
+  data: Role[]
+  meta: PaginationMeta
 }
 
 interface UpdateUserRequest {
@@ -99,7 +111,7 @@ interface TriggerSyncResponse {
   channel: string
 }
 
-export type { User, LoginRequest, LoginResponse, Role, AdminUser, PaginatedUsers, UpdateUserRequest }
+export type { User, LoginRequest, LoginResponse, Role, AdminUser, PaginatedUsers, PaginatedRoles, UpdateUserRequest, PaginationMeta }
 
 // ─── Auth ────────────────────────────────────────────────
 
@@ -158,7 +170,7 @@ export async function getPermissions(): Promise<Permission[]> {
 
 // ─── Roles ───────────────────────────────────────────────
 
-export async function getRoles(params: { page?: number; limit?: number; search?: string } = {}): Promise<Role[]> {
+export async function getRoles(params: { page?: number; limit?: number; search?: string } = {}): Promise<PaginatedRoles> {
   const query = new URLSearchParams()
   if (params.page) query.set('page', String(params.page))
   if (params.limit) query.set('limit', String(params.limit))
@@ -167,10 +179,7 @@ export async function getRoles(params: { page?: number; limit?: number; search?:
   const queryString = query.toString()
   const url = queryString ? `/roles?${queryString}` : '/roles'
 
-  const result = await apiFetch<{ roles: Role[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(url)
-
-  // Retourner seulement le tableau de rôles
-  return result?.roles ?? []
+  return apiFetch<PaginatedRoles>(url)
 }
 
 export async function createRole(data: { name: string; permissions: string[] }): Promise<Role> {

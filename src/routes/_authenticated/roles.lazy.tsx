@@ -378,6 +378,7 @@ export default function RolesPage() {
   })
 
   const allPermissions = permissionsQuery.data ?? []
+  const roles = rolesQuery.data?.data ?? []
 
   return (
     <div className="space-y-6">
@@ -396,8 +397,8 @@ export default function RolesPage() {
             <div>
               <CardTitle className="text-base">Rôles disponibles</CardTitle>
               <CardDescription>
-                {rolesQuery.data
-                  ? `${rolesQuery.data.length} rôle${rolesQuery.data.length > 1 ? 's' : ''} configuré${rolesQuery.data.length > 1 ? 's' : ''}`
+                {roles.length > 0
+                  ? `${roles.length} rôle${roles.length > 1 ? 's' : ''} configuré${roles.length > 1 ? 's' : ''}`
                   : 'Chargement...'}
               </CardDescription>
             </div>
@@ -414,7 +415,7 @@ export default function RolesPage() {
             <p className="py-8 text-center text-destructive">
               Erreur : {rolesQuery.error.message}
             </p>
-          ) : rolesQuery.data && rolesQuery.data.length > 0 ? (
+          ) : roles.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -426,7 +427,7 @@ export default function RolesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rolesQuery.data.map((role) => (
+                {roles.map((role) => (
                   <TableRow key={role.id}>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {role.id}

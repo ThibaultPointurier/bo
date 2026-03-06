@@ -75,8 +75,8 @@ function DashboardPage() {
         retry: false,
     })
 
-    const totalRoles = rolesQuery.data?.length ?? 0
-    const totalUsers = usersQuery.data?.meta.total ?? 0
+    const totalRoles = rolesQuery.data?.data?.length ?? 0
+    const totalUsers = usersQuery.data?.meta?.total ?? 0
 
     return (
         <div className="space-y-6">

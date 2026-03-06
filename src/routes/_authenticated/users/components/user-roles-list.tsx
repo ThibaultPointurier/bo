@@ -23,6 +23,8 @@ export function UserRolesList({ userId, initialRoles }: UserRolesListProps) {
     queryFn: () => getRoles(),
   })
 
+  const roles = rolesQuery.data?.data ?? []
+
   async function handleToggleRole(roleName: string, checked: boolean) {
     setRoleError(null)
     setTogglingRole(roleName)
@@ -61,9 +63,9 @@ export function UserRolesList({ userId, initialRoles }: UserRolesListProps) {
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
-        ) : rolesQuery.data && rolesQuery.data.length > 0 ? (
+        ) : roles.length > 0 ? (
           <div className="space-y-3">
-            {rolesQuery.data.map((role: Role) => {
+            {roles.map((role: Role) => {
               const hasRole = userRoles.includes(role.name)
               const isToggling = togglingRole === role.name
               return (
