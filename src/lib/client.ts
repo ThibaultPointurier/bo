@@ -14,7 +14,7 @@
 import { getStoredToken } from '@/lib/auth'
 import { parseApiError } from '@/lib/api-error'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3333/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3333/api/v1'
 
 type RequestOptions = Omit<RequestInit, 'body' | 'headers'> & {
   /** Request body — plain objects are automatically serialised to JSON. */

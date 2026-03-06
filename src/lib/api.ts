@@ -1,4 +1,5 @@
-import { apiFetch } from '@/lib/client'
+import { apiFetch, API_BASE_URL } from '@/lib/client'
+import { getStoredToken } from '@/lib/auth'
 export { ApiError } from './api-error'
 export type { ApiErrorEntry, ApiErrorBody } from './api-error'
 
@@ -131,13 +132,45 @@ export async function getProfile(): Promise<User> {
 // ─── Permissions ─────────────────────────────────────────
 
 export async function getPermissions(): Promise<Permission[]> {
-  return apiFetch<Permission[]>('/permissions')
+  // L'endpoint /permissions retourne directement un tableau sans { data: ... }
+  // On doit faire la requête raw
+  const token = getStoredToken()
+  if (!token) {
+    throw new Error('No authentication token found')
+  }
+
+  const response = await fetch(`${API_BASE_URL}/permissions`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch permissions')
+  }
+
+  const result = await response.json()
+  // Si l'API retourne { data: [...] }, on prend data, sinon on prend result directement
+  return (result.data || result) ?? []
 }
 
 // ─── Roles ───────────────────────────────────────────────
 
-export async function getRoles(): Promise<Role[]> {
-  return apiFetch<Role[]>('/roles')
+export async function getRoles(params: { page?: number; limit?: number; search?: string } = {}): Promise<Role[]> {
+  const query = new URLSearchParams()
+  if (params.page) query.set('page', String(params.page))
+  if (params.limit) query.set('limit', String(params.limit))
+  if (params.search) query.set('search', params.search)
+
+  const queryString = query.toString()
+  const url = queryString ? `/roles?${queryString}` : '/roles'
+
+  const result = await apiFetch<{ roles: Role[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(url)
+
+  // Retourner seulement le tableau de rôles
+  return result?.roles ?? []
 }
 
 export async function createRole(data: { name: string; permissions: string[] }): Promise<Role> {

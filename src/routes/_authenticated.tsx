@@ -1,11 +1,31 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import type { QueryClient } from '@tanstack/react-query'
 import { isAuthenticated } from '@/lib/auth'
+import { getPermissions, getRoles } from '@/lib/api'
 import { useUserProfile } from '@/hooks/use-user-profile'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Separator } from '@/components/ui/separator'
 
 export const Route = createFileRoute('/_authenticated')({
+  loader: async ({ context }) => {
+    // Cast du contexte pour accéder à queryClient
+    const { queryClient } = context as unknown as { queryClient: QueryClient }
+
+    // Précharger les données statiques communes
+    await Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: ['permissions'],
+        queryFn: getPermissions,
+        staleTime: Infinity,
+      }),
+      queryClient.prefetchQuery({
+        queryKey: ['roles'],
+        queryFn: () => getRoles(), // Wrapper dans une fonction
+        staleTime: 1000 * 60 * 5, // 5 minutes
+      }),
+    ])
+  },
   beforeLoad: () => {
     if (!isAuthenticated()) {
       throw redirect({ to: '/login' })
