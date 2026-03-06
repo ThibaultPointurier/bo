@@ -1,6 +1,6 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getUsers } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -18,10 +18,21 @@ import {
 import { ChevronLeft, ChevronRight, Search, Pencil, Users } from 'lucide-react'
 
 export default function UsersPage() {
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [searchInput, setSearchInput] = useState('')
+  const navigate = useNavigate({ from: '/users' })
+  const searchParams = useSearch({ from: '/_authenticated/users/' })
+
+  // Lire les paramètres depuis l'URL avec typage correct
+  const page = (searchParams as { page?: number; search?: string }).page ?? 1
+  const search = (searchParams as { page?: number; search?: string }).search ?? ''
   const limit = 20
+
+  // State local uniquement pour l'input (pour ne pas déclencher de query à chaque frappe)
+  const [searchInput, setSearchInput] = useState(search)
+
+  // Synchroniser l'input avec l'URL quand on navigue (bouton retour, etc.)
+  useEffect(() => {
+    setSearchInput(search)
+  }, [search])
 
   const usersQuery = useQuery({
     queryKey: ['admin-users', { page, limit, search }],
@@ -34,8 +45,22 @@ export default function UsersPage() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    setSearch(searchInput)
-    setPage(1)
+    // Mettre à jour l'URL au lieu du state
+    navigate({
+      search: { page: 1, search: searchInput || undefined }
+    })
+  }
+
+  function handlePageChange(newPage: number) {
+    // Mettre à jour l'URL avec la nouvelle page
+    navigate({
+      search: { page: newPage, search: search || undefined }
+    })
+  }
+
+  function handleClearSearch() {
+    setSearchInput('')
+    navigate({ search: { page: 1, search: undefined } })
   }
 
   return (
@@ -48,7 +73,7 @@ export default function UsersPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-sm">
+      <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-lg">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
@@ -61,6 +86,16 @@ export default function UsersPage() {
         <Button type="submit" variant="secondary" size="sm">
           Rechercher
         </Button>
+        {search && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClearSearch}
+          >
+            Effacer
+          </Button>
+        )}
       </form>
 
       <Card>
@@ -172,7 +207,7 @@ export default function UsersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      onClick={() => handlePageChange(Math.max(1, page - 1))}
                       disabled={page <= 1}
                     >
                       <ChevronLeft className="size-4" />
@@ -181,7 +216,7 @@ export default function UsersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage((p) => p + 1)}
+                      onClick={() => handlePageChange(page + 1)}
                       disabled={page >= meta.totalPages}
                     >
                       Suivant
