@@ -1,5 +1,4 @@
 import { apiFetch, API_BASE_URL } from '@/lib/client'
-import { getStoredToken } from '@/lib/auth'
 export { ApiError } from './api-error'
 export type { ApiErrorEntry, ApiErrorBody } from './api-error'
 
@@ -121,7 +120,6 @@ export type { User, LoginRequest, LoginResponse, Role, AdminUser, PaginatedUsers
  */
 export async function loginApi(data: LoginRequest): Promise<LoginResponse> {
   const { parseApiError } = await import('./api-error')
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3333/api/v1'
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -144,28 +142,7 @@ export async function getProfile(): Promise<User> {
 // ─── Permissions ─────────────────────────────────────────
 
 export async function getPermissions(): Promise<Permission[]> {
-  // L'endpoint /permissions retourne directement un tableau sans { data: ... }
-  // On doit faire la requête raw
-  const token = getStoredToken()
-  if (!token) {
-    throw new Error('No authentication token found')
-  }
-
-  const response = await fetch(`${API_BASE_URL}/permissions`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch permissions')
-  }
-
-  const result = await response.json()
-  // Si l'API retourne { data: [...] }, on prend data, sinon on prend result directement
-  return (result.data || result) ?? []
+  return apiFetch<Permission[]>('/permissions', { raw: true })
 }
 
 // ─── Roles ───────────────────────────────────────────────

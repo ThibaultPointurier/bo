@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { CheckCircle, XCircle, Power, PowerOff } from 'lucide-react'
+import { formatDateLong } from '@/lib/utils'
 import type { AdminUser } from '@/lib/api'
 
 interface UserSummaryCardProps {
@@ -97,11 +98,7 @@ export function UserSummaryCard({ user, userRoles }: UserSummaryCardProps) {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Inscrit le</span>
             <span className="font-medium">
-              {new Date(user.createdAt).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
+              {formatDateLong(user.createdAt)}
             </span>
           </div>
 
@@ -109,11 +106,7 @@ export function UserSummaryCard({ user, userRoles }: UserSummaryCardProps) {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Modifié le</span>
               <span className="font-medium">
-                {new Date(user.updatedAt).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
+                {formatDateLong(user.updatedAt)}
               </span>
             </div>
           )}

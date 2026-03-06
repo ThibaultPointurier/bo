@@ -13,10 +13,11 @@ import {
   XCircle,
   Loader2,
   Terminal,
-  Trash2, ShieldAlert,
+  Trash2,
+  ShieldAlert,
 } from 'lucide-react'
-import {getStoredUser} from "@/lib/auth.ts";
-import {hasPermission, Permission} from "@/lib/permissions.ts";
+import { getStoredUser } from '@/lib/auth'
+import { hasPermission, Permission } from '@/lib/permissions'
 
 export const Route = createFileRoute('/_authenticated/sync')({
   component: SyncPage,
@@ -57,37 +58,6 @@ function SyncPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const transmitRefs = useRef<Map<string, { transmit: ReturnType<typeof createTransmit>; subscription: { delete: () => void } }>>(new Map())
 
-  // Afficher un message si l'utilisateur n'a pas la permission
-  if (!canSync) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Synchronisation</h1>
-          <p className="text-muted-foreground">
-            Lancez la synchronisation des données depuis le CDN Wakfu et suivez la progression en
-            temps réel.
-          </p>
-        </div>
-        <Card className="border-orange-400">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-orange-600">
-              <ShieldAlert className="size-5" />
-              <CardTitle>Accès non autorisé</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Vous n'avez pas la permission <code className="px-2 py-1 bg-muted rounded text-sm">admin:sync</code> nécessaire pour accéder à cette fonctionnalité.
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Contactez un administrateur pour obtenir l'accès.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   // Auto-scroll to bottom
   useEffect(() => {
     if (containerRef.current) {
@@ -97,12 +67,13 @@ function SyncPage() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const refs = transmitRefs.current
     return () => {
-      transmitRefs.current.forEach((ref) => {
+      refs.forEach((ref) => {
         ref.subscription.delete()
         ref.transmit.close()
       })
-      transmitRefs.current.clear()
+      refs.clear()
     }
   }, [])
 
@@ -111,7 +82,6 @@ function SyncPage() {
   }, [])
 
   const triggerSync = useCallback(async (type: SyncType) => {
-    // Cleanup previous connection for this type
     const existing = transmitRefs.current.get(type)
     if (existing) {
       existing.subscription.delete()
@@ -125,19 +95,9 @@ function SyncPage() {
 
     try {
       const triggerFn = type === 'items' ? triggerSyncItems : triggerSyncJobs
-
       addLog(type, `📡 Appel de l'API en cours...`, 'info')
 
-      let response
-      try {
-        response = await triggerFn()
-        console.log('🔍 API Response:', response)
-        addLog(type, `✓ Réponse API reçue`, 'success')
-      } catch (apiError) {
-        console.error('❌ API Error:', apiError)
-        const errorMsg = apiError instanceof Error ? apiError.message : String(apiError)
-        throw new Error(`Erreur API: ${errorMsg}`)
-      }
+      const response = await triggerFn()
 
       if (!response) {
         throw new Error('La réponse de l\'API est vide (undefined)')
@@ -193,6 +153,37 @@ function SyncPage() {
   }, [])
 
   const isAnySyncRunning = Object.values(statuses).some((s) => s === 'running')
+
+  // Permission check AFTER all hooks (React Rules of Hooks)
+  if (!canSync) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Synchronisation</h1>
+          <p className="text-muted-foreground">
+            Lancez la synchronisation des données depuis le CDN Wakfu et suivez la progression en
+            temps réel.
+          </p>
+        </div>
+        <Card className="border-orange-400">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-orange-600">
+              <ShieldAlert className="size-5" />
+              <CardTitle>Accès non autorisé</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Vous n'avez pas la permission <code className="px-2 py-1 bg-muted rounded text-sm">admin:sync</code> nécessaire pour accéder à cette fonctionnalité.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Contactez un administrateur pour obtenir l'accès.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -275,7 +266,7 @@ function SyncPage() {
         <CardContent>
           <div
             ref={containerRef}
-            className="bg-zinc-950 rounded-lg border border-zinc-800 p-4 font-mono text-sm h-[500px] overflow-y-auto"
+            className="bg-zinc-950 rounded-lg border border-zinc-800 p-4 font-mono text-sm h-125 overflow-y-auto"
           >
             {logs.length === 0 && (
               <p className="text-zinc-600 italic">

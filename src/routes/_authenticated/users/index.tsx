@@ -1,4 +1,4 @@
-import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 
 const usersSearchSchema = z.object({
@@ -7,7 +7,6 @@ const usersSearchSchema = z.object({
 })
 
 export const Route = createFileRoute('/_authenticated/users/')({
-  component: lazyRouteComponent(() => import('./index.lazy')),
   validateSearch: usersSearchSchema,
 })
 

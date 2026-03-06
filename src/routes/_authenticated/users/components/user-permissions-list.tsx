@@ -44,16 +44,6 @@ export function UserPermissionsList({ userId, userRoles }: UserPermissionsListPr
     queryFn: () => getUserPermissions(userId),
   })
 
-  // Debug logs
-  useEffect(() => {
-    console.log('🔍 AllPermissionsQuery:', {
-      isLoading: allPermissionsQuery.isLoading,
-      isError: allPermissionsQuery.isError,
-      data: allPermissionsQuery.data,
-      dataLength: allPermissionsQuery.data?.length,
-    })
-  }, [allPermissionsQuery.data, allPermissionsQuery.isLoading, allPermissionsQuery.isError])
-
   useEffect(() => {
     if (permissionsQuery.data) {
       setIndividualPermissions(permissionsQuery.data.individualPermissions)
@@ -132,9 +122,6 @@ export function UserPermissionsList({ userId, userRoles }: UserPermissionsListPr
                 },
                 {} as Record<string, typeof allPermissionsQuery.data>
               )
-
-              console.log('🗂️ Grouped permissions:', grouped)
-              console.log('🔑 Categories:', Object.keys(grouped))
 
               return Object.entries(grouped).map(([category, perms]) => (
               <div key={category}>

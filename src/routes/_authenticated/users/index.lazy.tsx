@@ -1,3 +1,4 @@
+import { createLazyFileRoute } from '@tanstack/react-router'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
@@ -16,8 +17,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ChevronLeft, ChevronRight, Search, Pencil, Users } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 
-export default function UsersPage() {
+export const Route = createLazyFileRoute('/_authenticated/users/')({
+  component: UsersPage,
+})
+
+function UsersPage() {
   const navigate = useNavigate({ from: '/users' })
   const searchParams = useSearch({ from: '/_authenticated/users/' })
 
@@ -175,11 +181,7 @@ export default function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(user.createdAt).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDate(user.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

@@ -1,6 +1,10 @@
-import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/roles')({
-  component: lazyRouteComponent(() => import('./roles.lazy')),
+  component: RolesLayout,
 })
+
+function RolesLayout() {
+  return <Outlet />
+}
 

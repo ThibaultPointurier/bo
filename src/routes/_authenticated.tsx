@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
-import type { QueryClient } from '@tanstack/react-query'
 import { isAuthenticated } from '@/lib/auth'
 import { getPermissions, getRoles } from '@/lib/api'
 import { useUserProfile } from '@/hooks/use-user-profile'
@@ -9,8 +8,7 @@ import { Separator } from '@/components/ui/separator'
 
 export const Route = createFileRoute('/_authenticated')({
   loader: async ({ context }) => {
-    // Cast du contexte pour accéder à queryClient
-    const { queryClient } = context as unknown as { queryClient: QueryClient }
+    const { queryClient } = context
 
     // Précharger les données statiques communes
     await Promise.all([

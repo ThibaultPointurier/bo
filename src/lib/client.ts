@@ -21,6 +21,8 @@ type RequestOptions = Omit<RequestInit, 'body' | 'headers'> & {
   body?: unknown
   /** Extra headers merged on top of the defaults. */
   headers?: Record<string, string>
+  /** When true, return the raw JSON response instead of unwrapping `result.data`. */
+  raw?: boolean
 }
 
 /**
@@ -31,7 +33,7 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { body, headers: extraHeaders, ...rest } = options
+  const { body, headers: extraHeaders, raw, ...rest } = options
 
   const token = getStoredToken()
 
@@ -60,7 +62,8 @@ export async function apiFetch<T = unknown>(
   }
 
   const result = await response.json()
-  // API wraps all responses in { data: ... }. Enforce this contract here.
-  return result.data as T
+  // When raw is true, return the full JSON response as-is.
+  // Otherwise, unwrap the standard { data: ... } envelope.
+  return (raw ? result : result.data) as T
 }
 

@@ -1,3 +1,4 @@
+import { createLazyFileRoute } from '@tanstack/react-router'
 import { Link, useParams } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
@@ -13,7 +14,11 @@ import { UserSummaryCard } from './components/user-summary-card'
 import { UserDeactivateDialog } from './components/user-deactivate-dialog'
 import { UserEditSkeleton } from './components/user-edit-skeleton'
 
-export default function EditUserPage() {
+export const Route = createLazyFileRoute('/_authenticated/users/$userId')({
+  component: EditUserPage,
+})
+
+function EditUserPage() {
   const { userId } = useParams({ from: '/_authenticated/users/$userId' })
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
   const [userRoles, setUserRoles] = useState<string[]>([])

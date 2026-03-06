@@ -15,8 +15,12 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedItemsRouteImport } from './routes/_authenticated/items'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
+import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles/index'
 import { Route as AuthenticatedUsersUserIdRouteImport } from './routes/_authenticated/users/$userId'
+import { Route as AuthenticatedRolesCreateRouteImport } from './routes/_authenticated/roles/create'
+import { Route as AuthenticatedRolesRoleIdRouteImport } from './routes/_authenticated/roles/$roleId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -47,44 +51,87 @@ const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedItemsRoute = AuthenticatedItemsRouteImport.update({
+  id: '/items',
+  path: '/items',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedUsersRoute,
-} as any)
+} as any).lazy(() =>
+  import('./routes/_authenticated/users/index.lazy').then((d) => d.Route),
+)
+const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any).lazy(() =>
+  import('./routes/_authenticated/roles/index.lazy').then((d) => d.Route),
+)
 const AuthenticatedUsersUserIdRoute =
   AuthenticatedUsersUserIdRouteImport.update({
     id: '/$userId',
     path: '/$userId',
     getParentRoute: () => AuthenticatedUsersRoute,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/_authenticated/users/$userId.lazy').then((d) => d.Route),
+  )
+const AuthenticatedRolesCreateRoute =
+  AuthenticatedRolesCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => AuthenticatedRolesRoute,
+  } as any).lazy(() =>
+    import('./routes/_authenticated/roles/create.lazy').then((d) => d.Route),
+  )
+const AuthenticatedRolesRoleIdRoute =
+  AuthenticatedRolesRoleIdRouteImport.update({
+    id: '/$roleId',
+    path: '/$roleId',
+    getParentRoute: () => AuthenticatedRolesRoute,
+  } as any).lazy(() =>
+    import('./routes/_authenticated/roles/$roleId.lazy').then((d) => d.Route),
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
-  '/roles': typeof AuthenticatedRolesRoute
+  '/items': typeof AuthenticatedItemsRoute
+  '/roles': typeof AuthenticatedRolesRouteWithChildren
   '/sync': typeof AuthenticatedSyncRoute
   '/users': typeof AuthenticatedUsersRouteWithChildren
+  '/roles/$roleId': typeof AuthenticatedRolesRoleIdRoute
+  '/roles/create': typeof AuthenticatedRolesCreateRoute
   '/users/$userId': typeof AuthenticatedUsersUserIdRoute
+  '/roles/': typeof AuthenticatedRolesIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/roles': typeof AuthenticatedRolesRoute
+  '/items': typeof AuthenticatedItemsRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/': typeof AuthenticatedIndexRoute
+  '/roles/$roleId': typeof AuthenticatedRolesRoleIdRoute
+  '/roles/create': typeof AuthenticatedRolesCreateRoute
   '/users/$userId': typeof AuthenticatedUsersUserIdRoute
+  '/roles': typeof AuthenticatedRolesIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/_authenticated/roles': typeof AuthenticatedRolesRoute
+  '/_authenticated/items': typeof AuthenticatedItemsRoute
+  '/_authenticated/roles': typeof AuthenticatedRolesRouteWithChildren
   '/_authenticated/sync': typeof AuthenticatedSyncRoute
   '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/roles/$roleId': typeof AuthenticatedRolesRoleIdRoute
+  '/_authenticated/roles/create': typeof AuthenticatedRolesCreateRoute
   '/_authenticated/users/$userId': typeof AuthenticatedUsersUserIdRoute
+  '/_authenticated/roles/': typeof AuthenticatedRolesIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -92,22 +139,39 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/items'
     | '/roles'
     | '/sync'
     | '/users'
+    | '/roles/$roleId'
+    | '/roles/create'
     | '/users/$userId'
+    | '/roles/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/roles' | '/sync' | '/' | '/users/$userId' | '/users'
+  to:
+    | '/login'
+    | '/items'
+    | '/sync'
+    | '/'
+    | '/roles/$roleId'
+    | '/roles/create'
+    | '/users/$userId'
+    | '/roles'
+    | '/users'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/items'
     | '/_authenticated/roles'
     | '/_authenticated/sync'
     | '/_authenticated/users'
     | '/_authenticated/'
+    | '/_authenticated/roles/$roleId'
+    | '/_authenticated/roles/create'
     | '/_authenticated/users/$userId'
+    | '/_authenticated/roles/'
     | '/_authenticated/users/'
   fileRoutesById: FileRoutesById
 }
@@ -160,12 +224,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/items': {
+      id: '/_authenticated/items'
+      path: '/items'
+      fullPath: '/items'
+      preLoaderRoute: typeof AuthenticatedItemsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/users/': {
       id: '/_authenticated/users/'
       path: '/'
       fullPath: '/users/'
       preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
       parentRoute: typeof AuthenticatedUsersRoute
+    }
+    '/_authenticated/roles/': {
+      id: '/_authenticated/roles/'
+      path: '/'
+      fullPath: '/roles/'
+      preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
     }
     '/_authenticated/users/$userId': {
       id: '/_authenticated/users/$userId'
@@ -174,8 +252,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersUserIdRouteImport
       parentRoute: typeof AuthenticatedUsersRoute
     }
+    '/_authenticated/roles/create': {
+      id: '/_authenticated/roles/create'
+      path: '/create'
+      fullPath: '/roles/create'
+      preLoaderRoute: typeof AuthenticatedRolesCreateRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/roles/$roleId': {
+      id: '/_authenticated/roles/$roleId'
+      path: '/$roleId'
+      fullPath: '/roles/$roleId'
+      preLoaderRoute: typeof AuthenticatedRolesRoleIdRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
   }
 }
+
+interface AuthenticatedRolesRouteChildren {
+  AuthenticatedRolesRoleIdRoute: typeof AuthenticatedRolesRoleIdRoute
+  AuthenticatedRolesCreateRoute: typeof AuthenticatedRolesCreateRoute
+  AuthenticatedRolesIndexRoute: typeof AuthenticatedRolesIndexRoute
+}
+
+const AuthenticatedRolesRouteChildren: AuthenticatedRolesRouteChildren = {
+  AuthenticatedRolesRoleIdRoute: AuthenticatedRolesRoleIdRoute,
+  AuthenticatedRolesCreateRoute: AuthenticatedRolesCreateRoute,
+  AuthenticatedRolesIndexRoute: AuthenticatedRolesIndexRoute,
+}
+
+const AuthenticatedRolesRouteWithChildren =
+  AuthenticatedRolesRoute._addFileChildren(AuthenticatedRolesRouteChildren)
 
 interface AuthenticatedUsersRouteChildren {
   AuthenticatedUsersUserIdRoute: typeof AuthenticatedUsersUserIdRoute
@@ -191,14 +298,16 @@ const AuthenticatedUsersRouteWithChildren =
   AuthenticatedUsersRoute._addFileChildren(AuthenticatedUsersRouteChildren)
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
+  AuthenticatedItemsRoute: typeof AuthenticatedItemsRoute
+  AuthenticatedRolesRoute: typeof AuthenticatedRolesRouteWithChildren
   AuthenticatedSyncRoute: typeof AuthenticatedSyncRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedRolesRoute: AuthenticatedRolesRoute,
+  AuthenticatedItemsRoute: AuthenticatedItemsRoute,
+  AuthenticatedRolesRoute: AuthenticatedRolesRouteWithChildren,
   AuthenticatedSyncRoute: AuthenticatedSyncRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
