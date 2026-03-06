@@ -41,6 +41,7 @@ interface AdminUser {
   username: string
   usernameView: string
   isVerified: boolean
+  isActive: boolean
   discordId: string | null
   initials: string
   roles: string[]
@@ -114,7 +115,9 @@ export async function loginApi(data: LoginRequest): Promise<LoginResponse> {
     body: JSON.stringify(data),
   })
   if (!response.ok) throw await parseApiError(response)
-  return response.json()
+  const result = await response.json()
+  // API wraps response in { data: ... }
+  return result.data
 }
 
 export async function logoutApi(): Promise<void> {
@@ -193,8 +196,12 @@ export async function updateUser(userId: number, data: UpdateUserRequest): Promi
   return apiFetch<AdminUser>(`/admin/users/${userId}`, { method: 'PUT', body: data })
 }
 
-export async function deleteUser(userId: number): Promise<void> {
-  return apiFetch(`/admin/users/${userId}`, { method: 'DELETE' })
+export async function deactivateUser(userId: number): Promise<AdminUser> {
+  return apiFetch<AdminUser>(`/admin/users/${userId}/deactivate`, { method: 'PATCH' })
+}
+
+export async function activateUser(userId: number): Promise<AdminUser> {
+  return apiFetch<AdminUser>(`/admin/users/${userId}/activate`, { method: 'PATCH' })
 }
 
 // ─── User Stats ──────────────────────────────────────────

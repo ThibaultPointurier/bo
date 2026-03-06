@@ -2,7 +2,8 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard, Shield, Users, LogOut, RefreshCw } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { logoutApi, type User } from '@/lib/api'
-import { clearAuth, getStoredToken } from '@/lib/auth'
+import { clearAuth } from '@/lib/auth'
+import { Permission, hasPermission } from '@/lib/permissions'
 import {
   Sidebar,
   SidebarContent,
@@ -30,12 +31,27 @@ const generalItems = [
 ]
 
 const builderItems = [
-  { title: 'Synchronisation', to: '/sync' as const, icon: RefreshCw },
+  {
+    title: 'Synchronisation',
+    to: '/sync' as const,
+    icon: RefreshCw,
+    requiredPermission: Permission.ADMIN_SYNC
+  },
 ]
 
 const adminItems = [
-  { title: 'Utilisateurs', to: '/users' as const, icon: Users },
-  { title: 'Rôles', to: '/roles' as const, icon: Shield },
+  {
+    title: 'Utilisateurs',
+    to: '/users' as const,
+    icon: Users,
+    requiredPermission: Permission.ADMIN_USER_MANAGE
+  },
+  {
+    title: 'Rôles',
+    to: '/roles' as const,
+    icon: Shield,
+    requiredPermission: Permission.ADMIN_ROLE_MANAGE
+  },
 ]
 
 interface AppSidebarProps {
@@ -46,12 +62,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
 
+  // Filtrer les éléments en fonction des permissions de l'utilisateur
+  const visibleBuilderItems = builderItems.filter(item =>
+    !item.requiredPermission || hasPermission(user.permissions, item.requiredPermission)
+  )
+
+  const visibleAdminItems = adminItems.filter(item =>
+    !item.requiredPermission || hasPermission(user.permissions, item.requiredPermission)
+  )
+
   const logoutMutation = useMutation({
-    mutationFn: () => {
-      const token = getStoredToken()
-      if (token) return logoutApi(token)
-      return Promise.resolve()
-    },
+    mutationFn: () => logoutApi(),
     onSettled: () => {
       clearAuth()
       window.location.href = '/login'
@@ -93,14 +114,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarGroup>
 
         {/* Builder */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Builder</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {builderItems.length === 0 ? (
-                <p className="px-2 py-1 text-xs text-muted-foreground">Bientôt disponible</p>
-              ) : (
-                builderItems.map((item) => (
+        {visibleBuilderItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Builder</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleBuilderItems.map((item) => (
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={currentPath === item.to}>
                       <Link to={item.to}>
@@ -109,30 +128,32 @@ export function AppSidebar({ user }: AppSidebarProps) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Administration */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.to}>
-                  <SidebarMenuButton asChild isActive={currentPath === item.to}>
-                    <Link to={item.to}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleAdminItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleAdminItems.map((item) => (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton asChild isActive={currentPath === item.to}>
+                      <Link to={item.to}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t p-2">

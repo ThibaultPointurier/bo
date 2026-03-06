@@ -2,6 +2,7 @@ import {createFileRoute} from '@tanstack/react-router'
 import {useQuery} from '@tanstack/react-query'
 import {getStoredUser} from '@/lib/auth'
 import {getRoles, getUsers, getStoredCdnVersion, getUserRegistrationStats} from '@/lib/api'
+import {Permission, hasPermission} from '@/lib/permissions'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Skeleton} from '@/components/ui/skeleton'
 import {Shield, Users, Wifi, AlertTriangle} from 'lucide-react'
@@ -44,14 +45,22 @@ export const Route = createFileRoute('/_authenticated/')({
 function DashboardPage() {
     const user = getStoredUser()!
 
+    // Vérifier les permissions de l'utilisateur
+    const canViewRoles = hasPermission(user.permissions, Permission.ADMIN_ROLE_MANAGE)
+    const canViewUsers = hasPermission(user.permissions, Permission.ADMIN_USER_MANAGE)
+
     const rolesQuery = useQuery({
         queryKey: ['roles'],
         queryFn: () => getRoles(),
+        enabled: canViewRoles,
+        retry: false,
     })
 
     const usersQuery = useQuery({
         queryKey: ['users-count'],
         queryFn: () => getUsers({limit: 1}),
+        enabled: canViewUsers,
+        retry: false,
     })
 
     const versionQuery = useQuery({
@@ -62,9 +71,12 @@ function DashboardPage() {
     const userStatsQuery = useQuery({
         queryKey: ['user-registrations'],
         queryFn: () => getUserRegistrationStats(),
+        enabled: canViewUsers,
+        retry: false,
     })
 
     const totalRoles = rolesQuery.data?.length ?? 0
+    const totalUsers = usersQuery.data?.meta.total ?? 0
 
     return (
         <div className="space-y-6">
@@ -80,14 +92,14 @@ function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatsCard
                     title="Utilisateurs"
-                    value={usersQuery.isLoading ? undefined : String(usersQuery.data?.meta.total ?? 0)}
+                    value={!canViewUsers ? 'N/A' : (usersQuery.isLoading ? undefined : String(totalUsers))}
                     description="Comptes enregistrés"
                     icon={<Users className="size-4 text-muted-foreground"/>}
                 />
                 <StatsCard
-                    title="Builds"
-                    value={rolesQuery.isLoading ? undefined : String(totalRoles)}
-                    description="Builds créés par les utilisateurs"
+                    title="Rôles"
+                    value={!canViewRoles ? 'N/A' : (rolesQuery.isLoading ? undefined : String(totalRoles))}
+                    description="Rôles configurés"
                     icon={<Shield className="size-4 text-muted-foreground"/>}
                 />
                 <CdnVersionCard

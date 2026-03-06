@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import {
   getUser,
   updateUser,
-  deleteUser,
+  deactivateUser,
+  activateUser,
   getRoles,
   assignRole,
   removeRole,
@@ -33,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ArrowLeft, Save, Trash2, Shield, UserCog, Mail, CheckCircle, XCircle, KeyRound } from 'lucide-react'
+import { ArrowLeft, Save, Shield, UserCog, Mail, CheckCircle, XCircle, KeyRound, PowerOff, Power } from 'lucide-react'
 
 export const Route = createFileRoute('/_authenticated/users/$userId')({
   component: EditUserPage,
@@ -41,7 +42,6 @@ export const Route = createFileRoute('/_authenticated/users/$userId')({
 
 function EditUserPage() {
   const { userId } = Route.useParams()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const userQuery = useQuery({
@@ -74,7 +74,6 @@ function EditUserPage() {
   return (
     <EditUserForm
       user={userQuery.data!}
-      navigate={navigate}
       queryClient={queryClient}
     />
   )
@@ -119,17 +118,15 @@ function EditUserSkeleton() {
 
 function EditUserForm({
   user,
-  navigate,
   queryClient,
 }: {
   user: AdminUser
-  navigate: ReturnType<typeof useNavigate>
   queryClient: ReturnType<typeof useQueryClient>
 }) {
   const [email, setEmail] = useState(user.email)
   const [username, setUsername] = useState(user.usernameView ?? user.username)
   const [isVerified, setIsVerified] = useState(user.isVerified)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
 
   const [userRoles, setUserRoles] = useState<string[]>(user.roles)
   const [roleError, setRoleError] = useState<string | null>(null)
@@ -179,11 +176,20 @@ function EditUserForm({
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteUser(user.id),
-    onSuccess: () => {
+  const deactivateMutation = useMutation({
+    mutationFn: () => deactivateUser(user.id),
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(['admin-user', String(user.id)], updatedUser)
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      navigate({ to: '/users' })
+      setShowDeactivateDialog(false)
+    },
+  })
+
+  const activateMutation = useMutation({
+    mutationFn: () => activateUser(user.id),
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(['admin-user', String(user.id)], updatedUser)
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
   })
 
@@ -287,14 +293,27 @@ function EditUserForm({
             </div>
           </div>
         </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setShowDeleteDialog(true)}
-        >
-          <Trash2 className="mr-2 size-4" />
-          Supprimer
-        </Button>
+        {user.isActive ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeactivateDialog(true)}
+          >
+            <PowerOff className="mr-2 size-4" />
+            Désactiver
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950"
+            onClick={() => activateMutation.mutate()}
+            disabled={activateMutation.isPending}
+          >
+            <Power className="mr-2 size-4" />
+            {activateMutation.isPending ? 'Activation...' : 'Réactiver'}
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -589,7 +608,7 @@ function EditUserForm({
 
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Statut</span>
+                  <span className="text-muted-foreground">Email vérifié</span>
                   <div className="flex items-center gap-1.5">
                     {user.isVerified ? (
                       <>
@@ -600,6 +619,23 @@ function EditUserForm({
                       <>
                         <XCircle className="size-4 text-orange-500" />
                         <span className="text-orange-500 font-medium">Non vérifié</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Compte</span>
+                  <div className="flex items-center gap-1.5">
+                    {user.isActive ? (
+                      <>
+                        <Power className="size-4 text-green-600" />
+                        <span className="text-green-600 font-medium">Actif</span>
+                      </>
+                    ) : (
+                      <>
+                        <PowerOff className="size-4 text-destructive" />
+                        <span className="text-destructive font-medium">Désactivé</span>
                       </>
                     )}
                   </div>
@@ -666,29 +702,30 @@ function EditUserForm({
         </div>
       </div>
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      {/* Deactivate confirmation dialog */}
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Supprimer l'utilisateur</DialogTitle>
+            <DialogTitle>Désactiver le compte</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer <strong>{user.usernameView}</strong> ({user.email}) ?
-              Cette action est irréversible.
+              Êtes-vous sûr de vouloir désactiver le compte de <strong>{user.usernameView}</strong> ({user.email}) ?
+              L'utilisateur ne pourra plus se connecter tant que son compte sera désactivé.
             </DialogDescription>
           </DialogHeader>
-          {deleteMutation.isError && (
-            <p className="text-sm text-destructive">{deleteMutation.error.message}</p>
+          {deactivateMutation.isError && (
+            <p className="text-sm text-destructive">{deactivateMutation.error.message}</p>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
               Annuler
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
+              onClick={() => deactivateMutation.mutate()}
+              disabled={deactivateMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Suppression...' : 'Supprimer définitivement'}
+              <PowerOff className="mr-2 size-4" />
+              {deactivateMutation.isPending ? 'Désactivation...' : 'Désactiver le compte'}
             </Button>
           </DialogFooter>
         </DialogContent>

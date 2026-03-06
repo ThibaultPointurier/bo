@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
-import { isAuthenticated, getStoredUser } from '@/lib/auth'
+import { isAuthenticated } from '@/lib/auth'
+import { useUserProfile } from '@/hooks/use-user-profile'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Separator } from '@/components/ui/separator'
@@ -14,7 +15,11 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AuthenticatedLayout() {
-  const user = getStoredUser()!
+  const user = useUserProfile()
+
+  if (!user) {
+    return null // Ne devrait jamais arriver grâce au beforeLoad
+  }
 
   return (
     <SidebarProvider>

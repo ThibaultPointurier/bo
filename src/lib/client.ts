@@ -59,6 +59,8 @@ export async function apiFetch<T = unknown>(
     return undefined as T
   }
 
-  return response.json() as Promise<T>
+  const result = await response.json()
+  // API wraps all responses in { data: ... }. Enforce this contract here.
+  return result.data as T
 }
 

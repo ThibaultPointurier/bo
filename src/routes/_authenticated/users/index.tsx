@@ -94,6 +94,7 @@ function UsersPage() {
                     <TableHead>Utilisateur</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead className="w-28">Vérifié</TableHead>
+                    <TableHead className="w-28">Compte</TableHead>
                     <TableHead>Rôles</TableHead>
                     <TableHead className="w-36">Inscrit le</TableHead>
                     <TableHead className="w-24 text-right">Actions</TableHead>
@@ -122,6 +123,11 @@ function UsersPage() {
                       <TableCell>
                         <Badge variant={user.isVerified ? 'default' : 'outline'}>
                           {user.isVerified ? 'Vérifié' : 'Non vérifié'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.isActive ? 'default' : 'destructive'} className={user.isActive ? 'bg-green-600 hover:bg-green-700' : ''}>
+                          {user.isActive ? 'Actif' : 'Désactivé'}
                         </Badge>
                       </TableCell>
                       <TableCell>
