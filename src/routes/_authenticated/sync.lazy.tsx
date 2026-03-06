@@ -1,4 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { triggerSyncItems, triggerSyncJobs } from '@/lib/api'
 import { createTransmit } from '@/lib/transmit'
@@ -13,14 +12,8 @@ import {
   XCircle,
   Loader2,
   Terminal,
-  Trash2, ShieldAlert,
+  Trash2,
 } from 'lucide-react'
-import {getStoredUser} from "@/lib/auth.ts";
-import {hasPermission, Permission} from "@/lib/permissions.ts";
-
-export const Route = createFileRoute('/_authenticated/sync')({
-  component: SyncPage,
-})
 
 interface LogEntry {
   message: string
@@ -45,10 +38,7 @@ const sourceColors: Record<string, string> = {
   system: 'text-zinc-500',
 }
 
-function SyncPage() {
-  const user = getStoredUser()
-  const canSync = user ? hasPermission(user.permissions, Permission.ADMIN_SYNC) : false
-
+export default function SyncPage() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [statuses, setStatuses] = useState<Record<SyncType, SyncStatus>>({
     items: 'idle',
@@ -57,45 +47,12 @@ function SyncPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const transmitRefs = useRef<Map<string, { transmit: ReturnType<typeof createTransmit>; subscription: { delete: () => void } }>>(new Map())
 
-  // Afficher un message si l'utilisateur n'a pas la permission
-  if (!canSync) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Synchronisation</h1>
-          <p className="text-muted-foreground">
-            Lancez la synchronisation des données depuis le CDN Wakfu et suivez la progression en
-            temps réel.
-          </p>
-        </div>
-        <Card className="border-orange-400">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-orange-600">
-              <ShieldAlert className="size-5" />
-              <CardTitle>Accès non autorisé</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Vous n'avez pas la permission <code className="px-2 py-1 bg-muted rounded text-sm">admin:sync</code> nécessaire pour accéder à cette fonctionnalité.
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Contactez un administrateur pour obtenir l'accès.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Auto-scroll to bottom
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight
     }
   }, [logs])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       transmitRefs.current.forEach((ref) => {
@@ -111,7 +68,6 @@ function SyncPage() {
   }, [])
 
   const triggerSync = useCallback(async (type: SyncType) => {
-    // Cleanup previous connection for this type
     const existing = transmitRefs.current.get(type)
     if (existing) {
       existing.subscription.delete()
@@ -125,30 +81,7 @@ function SyncPage() {
 
     try {
       const triggerFn = type === 'items' ? triggerSyncItems : triggerSyncJobs
-
-      addLog(type, `📡 Appel de l'API en cours...`, 'info')
-
-      let response
-      try {
-        response = await triggerFn()
-        console.log('🔍 API Response:', response)
-        addLog(type, `✓ Réponse API reçue`, 'success')
-      } catch (apiError) {
-        console.error('❌ API Error:', apiError)
-        const errorMsg = apiError instanceof Error ? apiError.message : String(apiError)
-        throw new Error(`Erreur API: ${errorMsg}`)
-      }
-
-      if (!response) {
-        throw new Error('La réponse de l\'API est vide (undefined)')
-      }
-
-      if (!response.channel) {
-        throw new Error(`Réponse API invalide - pas de channel. Reçu: ${JSON.stringify(response)}`)
-      }
-
-      const { channel } = response
-      addLog(type, `📻 Connexion au canal: ${channel}`, 'info')
+      const { channel } = await triggerFn()
 
       const transmit = createTransmit()
       const subscription = transmit.subscription(channel)
@@ -164,7 +97,6 @@ function SyncPage() {
             addLog(type, `❌ Synchronisation des ${label} échouée : ${data.message}`, 'error')
           }
 
-          // Cleanup
           setTimeout(() => {
             const ref = transmitRefs.current.get(type)
             if (ref) {
@@ -204,7 +136,6 @@ function SyncPage() {
         </p>
       </div>
 
-      {/* Action buttons */}
       <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={() => triggerSync('items')}
@@ -256,7 +187,6 @@ function SyncPage() {
         </Button>
       </div>
 
-      {/* Console */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div className="flex items-center gap-2">
